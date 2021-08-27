@@ -1,0 +1,106 @@
+version: '3'
+services:
+
+  zookeeper:
+    image: "confluentinc/cp-zookeeper:5.2.1"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+
+  kafka:
+    image: "confluentinc/cp-kafka:5.2.1"
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+  postgres:
+    image: 'postgres:9.6-alpine'
+    volumes:
+      - postgres-volume:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: keycloak
+      POSTGRES_HOST: postgres
+
+  keycloak:
+    image: jboss/keycloak:11.0.0
+    ports:
+      - 18443:8443
+      - 18080:8080
+      - 19990:9990
+    depends_on:
+      # Just a delay to wait for postgres! This is not recommended!
+      - kafka
+      - zookeeper
+      - transacoes
+      - postgres
+    environment:
+      DB_VENDOR: postgres
+      DB_ADDR: postgres
+      DB_PORT: 5432
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: Pa55w0rd
+      POSTGRES_PORT_5432_TCP_ADDR: 127.0.0.1
+    restart: on-failure
+
+  transacoes:
+    image: 'zupacademy/transacoes'
+    ports:
+      - 7777:7777
+    depends_on:
+      - kafka
+    environment:
+      SERVER_PORT: 7777
+      LOG_LEVEL: INFO
+      KAFKA_HOST: "kafka:29092"
+      JAEGER_ENDPOINT: http://jaeger:14268/api/traces
+
+  postgres-transacao:
+    image: 'postgres:9.6-alpine'
+    volumes:
+      - postgres-transacao:/var/lib/postgresql/data
+    ports:
+      - 5433:5432
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: transacao
+      POSTGRES_HOST: postgres
+
+  pgAdmin:
+    image: dpage/pgadmin4
+    ports:
+      - 4242:80
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+
+  transacao-webservice:
+    image: rafaelneto2/transacao
+    ports:
+      - 8085:8085
+    environment:
+      URL_DATABASE: jdbc:postgresql://postgres-transacao:5432/transacao
+      DB_USER: admin
+      DB_PASSWORD: admin
+    depends_on:
+      - postgres-transacao
+
+volumes:
+  postgres-volume:
+  postgres-transacao:

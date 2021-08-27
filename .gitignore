@@ -1,0 +1,11 @@
+HELP.md
+target/
+transacao/!.mvn/wrapper/maven-wrapper.jar
+transacao/!**/src/main/**/target/
+transacao/!**/src/test/**/target/
+
+### IntelliJ IDEA ###
+transacao/.idea
+transacao/*.iws
+transacao/*.iml
+transacao/*.ipr
