@@ -11,7 +11,7 @@ public interface TransacaoRepository extends JpaRepository<Transacao, Long> {
     @Query(value = "SELECT * " +
             " FROM Transacao as t " +
             " WHERE t.cartao_id = :idCartao " +
-            " ORDER BY t.efetivada_em " +
+            " ORDER BY t.efetivada_em desc " +
             " LIMIT 10;", nativeQuery = true)
     List<Transacao> comprasRecentes(Long idCartao);
 
