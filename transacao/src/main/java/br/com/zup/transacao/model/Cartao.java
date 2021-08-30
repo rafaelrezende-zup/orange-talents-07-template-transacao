@@ -3,6 +3,7 @@ package br.com.zup.transacao.model;
 import javax.persistence.*;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import java.util.List;
 import java.util.Objects;
 
 @Entity
@@ -16,6 +17,9 @@ public class Cartao {
     @Email
     @Column(unique = true)
     private String email;
+
+    @OneToMany(mappedBy = "cartao")
+    private List<Transacao> transacao;
 
     @Deprecated
     public Cartao() {

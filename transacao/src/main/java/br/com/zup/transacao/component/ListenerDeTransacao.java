@@ -1,6 +1,7 @@
 package br.com.zup.transacao.component;
 
 import br.com.zup.transacao.dto.EventoDeTransacao;
+import br.com.zup.transacao.dto.response.EstabelecimentoResponse;
 import br.com.zup.transacao.model.Cartao;
 import br.com.zup.transacao.model.Estabelecimento;
 import br.com.zup.transacao.model.Transacao;
@@ -12,6 +13,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class ListenerDeTransacao {
@@ -34,10 +37,22 @@ public class ListenerDeTransacao {
     public void ouvir(@Payload EventoDeTransacao eventoDeTransacao) {
         executor.inTransaction(() -> {
             Cartao cartao = cartaoRepository.getById(eventoDeTransacao.getCartao().getId());
-            Estabelecimento estabelecimento = new Estabelecimento(eventoDeTransacao.getEstabelecimento());
-            estabelecimentoRepository.save(estabelecimento);
+            Estabelecimento estabelecimento = recuperaEstabelecimento(eventoDeTransacao.getEstabelecimento());
             Transacao transacao = eventoDeTransacao.toModel(cartao, estabelecimento);
             transacaoRepository.save(transacao);
         });
     }
+
+    private Estabelecimento recuperaEstabelecimento(EstabelecimentoResponse response) {
+        Optional<Estabelecimento> possivelEstabelecimento = estabelecimentoRepository.findByNome(response.getNome());
+        if (possivelEstabelecimento.isEmpty()) {
+            Estabelecimento estabelecimento = new Estabelecimento(response);
+            executor.inTransaction(() -> {
+                estabelecimentoRepository.save(estabelecimento);
+            });
+            return estabelecimento;
+        }
+        return possivelEstabelecimento.get();
+    }
+
 }
