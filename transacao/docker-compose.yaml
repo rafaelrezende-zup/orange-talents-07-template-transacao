@@ -98,8 +98,10 @@ services:
       URL_DATABASE: jdbc:postgresql://postgres-transacao:5432/transacao
       DB_USER: admin
       DB_PASSWORD: admin
+      KAFKA_HOST: kafka:9092
     depends_on:
       - postgres-transacao
+      - kafka
 
 volumes:
   postgres-volume:
